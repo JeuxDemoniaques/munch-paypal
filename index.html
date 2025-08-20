@@ -13,21 +13,26 @@
     const params = new URLSearchParams(window.location.search);
     const email = params.get('email');
 
-    // Appel à ton Apps Script pour créer l'order PayPal
-    fetch(`https://script.google.com/macros/s/AKfycbyDJNGsyi2kkQw2_i9DUPk5YHXUVP_OXMYoZdALU8anLNjQKPd9IgWgLjegkaIFU_rX/exec?email=${encodeURIComponent(email)}}`)
-      .then(res => res.json())
-      .then(data => {
-        // data.approveUrl contient le lien PayPal
-        if (data && data.approveUrl) {
-          // Redirection automatique
-          window.location.href = data.approveUrl;
-        } else {
-          document.body.innerHTML += "<p>Erreur lors de la création du paiement.</p>";
-        }
-      })
-      .catch(err => {
-        document.body.innerHTML += "<p>Erreur réseau : " + err + "</p>";
-      });
+    if (!email) {
+      document.getElementById('info').innerText = "Email manquant dans l'URL.";
+    } else {
+      const webAppUrl = "https://script.google.com/macros/s/AKfycbyDJNGsyi2kkQw2_i9DUPk5YHXUVP_OXMYoZdALU8anLNjQKPd9IgWgLjegkaIFU_rX/exec?email=" + encodeURIComponent(email);
+      // Appel à ton Apps Script pour créer l'order PayPal
+      fetch(webAppUrl)
+        .then(res => res.json())
+        .then(data => {
+          // data.approveUrl contient le lien PayPal
+          if (data && data.approveUrl) {
+            // Redirection automatique
+            window.location.href = data.approveUrl;
+          } else {
+            document.body.innerHTML += "<p>Erreur lors de la création du paiement.</p>";
+          }
+        })
+        .catch(err => {
+          document.body.innerHTML += "<p>Erreur réseau : " + err + "</p>";
+        });
+    }
   </script>
 </body>
 </html>
