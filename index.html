@@ -1,38 +1,77 @@
 <!DOCTYPE html>
 <html lang="fr">
 <head>
-  <meta charset="UTF-8">
-  <title>Redirection PayPal</title>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Paiement PayPal</title>
 </head>
 <body>
-  <h2>Redirection vers PayPal...</h2>
-  <div id="paypal-button-container"></div>
+  <h2 id="title">Traitement…</h2>
+  <p id="info"></p>
 
   <script>
-    // Récupérer les paramètres de l'URL
     const params = new URLSearchParams(window.location.search);
-    const email = params.get('email');
+    const email  = params.get("email");
+    const flow   = params.get("paypal");      // return | cancel | null
+    const token  = params.get("token");       // orderId que renvoie PayPal sur return
+    const WEBAPP = "https://script.google.com/macros/s/AKfycbyDJNGsyi2kkQw2_i9DUPk5YHXUVP_OXMYoZdALU8anLNjQKPd9IgWgLjegkaIFU_rX/exec";
 
-    if (!email) {
-      document.getElementById('info').innerText = "Email manquant dans l'URL.";
-    } else {
-      const webAppUrl = "https://script.google.com/macros/s/AKfycbyDJNGsyi2kkQw2_i9DUPk5YHXUVP_OXMYoZdALU8anLNjQKPd9IgWgLjegkaIFU_rX/exec?email=" + encodeURIComponent(email);
-      // Appel à ton Apps Script pour créer l'order PayPal
-      fetch(webAppUrl)
-        .then(res => res.json())
-        .then(data => {
-          // data.approveUrl contient le lien PayPal
-          if (data && data.approveUrl) {
-            // Redirection automatique
-            window.location.href = data.approveUrl;
-          } else {
-            document.body.innerHTML += "<p>Erreur lors de la création du paiement.</p>";
-          }
-        })
-        .catch(err => {
-          document.body.innerHTML += "<p>Erreur réseau : " + err + "</p>";
-        });
+    async function callWebApp(url) {
+      const res = await fetch(url, { method: "GET" });
+      if (!res.ok) throw new Error("HTTP " + res.status);
+      return res.json();
     }
+
+    (async () => {
+      if (!email) {
+        document.getElementById("title").textContent = "Paramètre manquant";
+        document.getElementById("info").textContent  = "Email absent de l’URL.";
+        return;
+      }
+
+      // Annulation par l'utilisateur
+      if (flow === "cancel") {
+        document.getElementById("title").textContent = "Paiement annulé";
+        document.getElementById("info").textContent  = "Vous pouvez fermer cette page.";
+        return;
+      }
+
+      // Retour après approbation PayPal : on CAPTURE
+      if (flow === "return" && token) {
+        document.getElementById("title").textContent = "Validation du paiement…";
+        try {
+          const url = `${WEBAPP}?action=capture&orderId=${encodeURIComponent(token)}&email=${encodeURIComponent(email)}`;
+          const data = await callWebApp(url);
+          if (data && data.status === "COMPLETED") {
+            document.getElementById("title").textContent = "Merci ! Paiement confirmé ✅";
+            document.getElementById("info").textContent  = "Votre réservation est enregistrée.";
+          } else {
+            document.getElementById("title").textContent = "Oups…";
+            document.getElementById("info").textContent  = "Impossible de finaliser le paiement.";
+          }
+        } catch (e) {
+          document.getElementById("title").textContent = "Erreur";
+          document.getElementById("info").textContent  = e.message;
+        }
+        return;
+      }
+
+      // Début du flux : on créé l'order puis on redirige vers PayPal
+      document.getElementById("title").textContent = "Redirection vers PayPal…";
+      try {
+        const url  = `${WEBAPP}?action=create&email=${encodeURIComponent(email)}`;
+        const data = await callWebApp(url);
+        if (data && data.approveUrl) {
+          window.location.href = data.approveUrl;
+        } else {
+          document.getElementById("title").textContent = "Erreur";
+          document.getElementById("info").textContent  = "Création du paiement impossible.";
+        }
+      } catch (e) {
+        document.getElementById("title").textContent = "Erreur réseau";
+        document.getElementById("info").textContent  = e.message;
+      }
+    })();
   </script>
 </body>
 </html>
