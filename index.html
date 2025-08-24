@@ -44,7 +44,7 @@
           const data = await callWebApp(url);
           if (data && data.status === "COMPLETED") {
             document.getElementById("title").textContent = "Merci ! Paiement confirmé ✅";
-            document.getElementById("info").textContent  = "Votre réservation est enregistrée.";
+            document.getElementById("info").textContent  = "Votre réservation est enregistrée.\nVous pouvez fermer cette page.";
           } else {
             document.getElementById("title").textContent = "Oups…";
             document.getElementById("info").textContent  = "Impossible de finaliser le paiement.";
