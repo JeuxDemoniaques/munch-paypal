@@ -63,6 +63,9 @@
         const data = await callWebApp(url);
         if (data && data.approveUrl) {
           window.location.href = data.approveUrl;
+        } else if (error && error == "001") {
+          document.getElementById("title").textContent = "Erreur";
+          document.getElementById("info").textContent  = "Les réservations sont cloturées.";
         } else {
           document.getElementById("title").textContent = "Erreur";
           document.getElementById("info").textContent  = "Création du paiement impossible.";
